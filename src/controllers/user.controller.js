@@ -2,6 +2,7 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import {ApiError} from "../utils/ApiError.js"
 import { User } from "../models/user.model.js";
 import {uploadOnCloudinary} from "../utils/cloudnery.js"
+import {ApiResponse} from "../utils/ApiResponse.js"
 const registerUser=asyncHandler(async (req, res)=>{
 
     //  steps to register user 
@@ -20,11 +21,11 @@ const registerUser=asyncHandler(async (req, res)=>{
     ////})
 
     // get data from user 
-    // const { fullName, email , username, password }=req.body
-    // console.log("fullName : ", fullName);
-    // console.log("email : ", email);
-    // console.log("usernaem : ", username);
-    // console.log("password : ", password);
+    const { fullName, email , username, password }=req.body
+    console.log("fullName : ", fullName);
+    console.log("email : ", email);
+    console.log("usernaem : ", username);
+    console.log("password : ", password);
     if([fullName, email, username, password].some((field)=> field?.trim()==="")){
         throw new ApiError(400, "All fields are required")
     }
@@ -53,8 +54,32 @@ const registerUser=asyncHandler(async (req, res)=>{
     //  re check if avatar is present "MEANS IT IS UPLOADED OR NOT BCZ IN SCHEMA IT IS REQUIRED FIELS SO IF NOT THERE THEN DB BREAK"
     if(!avatar){
         throw new ApiError(400, "Avatar file is required") 
+    } 
+
+    // now upload url of cloudnery which we get on uploading  and other details// only User talk to Db
+   const user= await User.create({
+        fullName,
+        avatar : avatar.url,
+        coverImage : coverImage?.url || "",
+        email,
+        password,
+        username : username.toLowerCase()
+    }) 
+
+    //  now check if user is created or not , mongoDb by default add a field "_id" with every field
+    // use ".select"  if created , to get the specific data of created user., but it takes a string as input and santaxely we put "-"field what we dont want to select.
+
+    const userCreated =await User.findById(user._id).select(
+        "-password -refreshToken"
+    )
+
+    if(!userCreated){
+        throw new ApiError(500, "Something went wrong while registering the user")
     }
 
+    return res.status(201).json(
+        new ApiResponse(200, userCreated, "user data registered sucessfully")
+    )
 })
 
 export {registerUser};
