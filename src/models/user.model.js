@@ -26,7 +26,7 @@ const userSchema = new mongoose.Schema(
         index :  true
     },
     avatar : {
-        typr  : String, //we use cloudinary url 
+        type  : String, //we use cloudinary url 
         required : true,
 
     },
@@ -49,10 +49,10 @@ const userSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
-userSchema.pre("save", function(next){
+userSchema.pre("save",  async function(next){
     if(!this.isModified("password")) return next();
     // // ^ if password is modefied then only run the down code either return next.
-    this.password=bcrypt.hash(this.password, 10);
+    this.password=await bcrypt.hash(this.password, 10);
     // ^10 is just a number(can be 8 , etc) which tells how many times loop should run in backend 
     next();
     //^return next() flag always
@@ -62,13 +62,13 @@ userSchema.pre("save", function(next){
 
 // to compair the user given pass and stored encrypted pass we define custoem method here.
 
-userSchema.methods.isPasswordCorrect()= async function(password){
+userSchema.methods.isPasswordCorrect= async function(password){
     return await bcrypt.compare(password, this.password)
    // ^ return  true or false
 }
 
 userSchema.methods.generateAccessToken=function(){
-    jwt.sign({
+    return jwt.sign({
         _id : this._id, 
         email : this.email,
         username : this.username,
@@ -82,7 +82,7 @@ userSchema.methods.generateAccessToken=function(){
 }
 userSchema.methods.generateRefreshToken=function(){
 
-    jwt.sign({
+    return jwt.sign({
         _id : this._id, 
         email : this.email,
         username : this.username,
