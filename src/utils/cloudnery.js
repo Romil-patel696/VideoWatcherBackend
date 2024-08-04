@@ -16,10 +16,10 @@ const uploadOnCloudinary = async (localFilePateh)=>{
             })
             // file has been uploaded sucessfully
             console.log("file is uploaded on cloudnery  sucessfully", response.url)
-            console.log()
+            fs.unlinkSync(localFilePateh)
             return response;
         }catch(error){
-            fs.unlink(localFilePateh)  // remove the locally saved temporary file as teh uploade operation got failed 
+            fs.unlinkSync(localFilePateh)  // remove the locally saved temporary file as teh uploade operation got failed 
             return null;
             
         }

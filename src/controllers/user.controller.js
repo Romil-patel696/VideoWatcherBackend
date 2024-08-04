@@ -42,8 +42,16 @@ const registerUser=asyncHandler(async (req, res)=>{
 // check avatar and manage uploade. as we haev middleware in between of multer so it will add more fields in req.body ... bcz we use multer so we have acces of "req.files"
 
     const avatarLocalPath=req.files?.avatar[0]?.path;
-    const coverImageLocalPath=req.files?.coverImage[0]?.path;
+    // const coverImageLocalPath=req.files?.coverImage[0]?.path;  // we will do it down as a classic check 
     // ^ we get the path of these files(PATH MEANS BCZ MULTER TAKE FILES FROM DEVISE AND PUT IT ON LOCAL STORAGE THEN UPLOADE ON CLOUDNERY , THE PATH WHERE IMAGES ARE STORED ON OUR SERVER IS NEEDED EX. /PUBLIC/TEMO), now check if avatart is present or not , bcz it is important.
+     
+
+    let coverImageLocalPath;
+    if(req.files && Array.isArray(req.files.coverImage) && req.files.coverImage.length>0){
+        coverImageLocalPath=req.files.coverImage[0].path;
+    }
+
+
     if(!avatarLocalPath){
         throw new ApiError(400, "Avatar file is required")
     }
