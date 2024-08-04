@@ -33,7 +33,7 @@ const registerUser=asyncHandler(async (req, res)=>{
     
     // to check if user already exist or not, use USER methode to do so , it can takl to mongo db 
 
-    const existedUser=User.findOne({
+    const existedUser= await User.findOne({
         $or : [{username}, {email}]
     })
     if(existedUser){
