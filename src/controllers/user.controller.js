@@ -3,91 +3,177 @@ import {ApiError} from "../utils/ApiError.js"
 import { User } from "../models/user.model.js";
 import {uploadOnCloudinary} from "../utils/cloudnery.js"
 import {ApiResponse} from "../utils/ApiResponse.js"
+
+//  methode, as we have logied in we have access to user id , 
+const generateAccessTokenAndRefreshToken=async(userId)=>{
+    try{
+
+        const user=await User.findById(userId)
+        const accessToken=user.generateAccessToken()
+        const refreshToken=user.generateRefreshToken()
+        //  generated not saved in DB so add
+        user.refreshToken=refreshToken;
+        // we haev set a value at  refreshToken as refreshtoken, now need to saev that data
+        // user.save() //when we run this so mongoose models kick in ==> check password  adn other fields as if we are saving a nw object but we are updating a variable or property value only => no need to validate .
+        await user.save({validateBeforeSave: false})
+
+        return {accessToken, refreshToken}
+    }catch(error){
+        throw new ApiError(500, "something went wrong while generating tokens")
+    }
+
+}
+
 const registerUser=asyncHandler(async (req, res)=>{
 
-    //  steps to register user 
-    //  1. get user details(name , usernaem , password , email if needed verify it )// take it from frontend or postman.
-    // 2.  checkk if user is already exist.(how => check if email is unique and username )
-    //  3.  check for images and avatar as we have created our db to have images etc. 
-    //  4. uploade the avatar and impage on cloudnery and get the url .
-    //  5. create user OBJECT - create entry in DB
-    //  6. we will get response as it is and password is encrypted  so give taht to user (remove password and refresh token field from response)
-    //  7. check for user creation
-    //  8. return res or error 
+        //  steps to register user 
+        //  1. get user details(name , usernaem , password , email if needed verify it )// take it from frontend or postman.
+        // 2.  checkk if user is already exist.(how => check if email is unique and username )
+        //  3.  check for images and avatar as we have created our db to have images etc. 
+        //  4. uploade the avatar and impage on cloudnery and get the url .
+        //  5. create user OBJECT - create entry in DB
+        //  6. we will get response as it is and password is encrypted  so give taht to user (remove password and refresh token field from response)
+        //  7. check for user creation
+        //  8. return res or error 
 
 
-    //// return res.status(200).json({
-    ////     message : "hello romil here"
-    ////})
+        //// return res.status(200).json({
+        ////     message : "hello romil here"
+        ////})
 
-    // get data from user 
-    const { fullName, email , username, password }=req.body
-    console.log("fullName : ", fullName);
-    console.log("email : ", email);
-    console.log("usernaem : ", username);
-    console.log("password : ", password);
-    if([fullName, email, username, password].some((field)=> field?.trim()==="")){
-        throw new ApiError(400, "All fields are required")
-    }
-    //^ some method takes a callback and run it for every element if any return true so stop and give true and if executed.
-    
-    // to check if user already exist or not, use USER methode to do so , it can takl to mongo db 
+        // get data from user 
+        const { fullName, email , username, password }=req.body
+        console.log("fullName : ", fullName);
+        console.log("email : ", email);
+        console.log("usernaem : ", username);
+        console.log("password : ", password);
+        if([fullName, email, username, password].some((field)=> field?.trim()==="")){
+            throw new ApiError(400, "All fields are required")
+        }
+        //^ some method takes a callback and run it for every element if any return true so stop and give true and if executed.
 
-    const existedUser= await User.findOne({
-        $or : [{username}, {email}]
-    })
-    if(existedUser){
-        throw new ApiError(409, "User with email and username exists.")
-    }
-// check avatar and manage uploade. as we haev middleware in between of multer so it will add more fields in req.body ... bcz we use multer so we have acces of "req.files"
+        // to check if user already exist or not, use USER methode to do so , it can takl to mongo db 
 
-    const avatarLocalPath=req.files?.avatar[0]?.path;
-    // const coverImageLocalPath=req.files?.coverImage[0]?.path;  // we will do it down as a classic check 
-    // ^ we get the path of these files(PATH MEANS BCZ MULTER TAKE FILES FROM DEVISE AND PUT IT ON LOCAL STORAGE THEN UPLOADE ON CLOUDNERY , THE PATH WHERE IMAGES ARE STORED ON OUR SERVER IS NEEDED EX. /PUBLIC/TEMO), now check if avatart is present or not , bcz it is important.
-     
+        const existedUser= await User.findOne({
+            $or : [{username}, {email}]
+        })
+        if(existedUser){
+            throw new ApiError(409, "User with email and username exists.")
+        }
+    // check avatar and manage uploade. as we haev middleware in between of multer so it will add more fields in req.body ... bcz we use multer so we have acces of "req.files"
 
-    let coverImageLocalPath;
-    if(req.files && Array.isArray(req.files.coverImage) && req.files.coverImage.length>0){
-        coverImageLocalPath=req.files.coverImage[0].path;
-    }
+        const avatarLocalPath=req.files?.avatar[0]?.path;
+        // const coverImageLocalPath=req.files?.coverImage[0]?.path;  // we will do it down as a classic check 
+        // ^ we get the path of these files(PATH MEANS BCZ MULTER TAKE FILES FROM DEVISE AND PUT IT ON LOCAL STORAGE THEN UPLOADE ON CLOUDNERY , THE PATH WHERE IMAGES ARE STORED ON OUR SERVER IS NEEDED EX. /PUBLIC/TEMO), now check if avatart is present or not , bcz it is important.
 
 
-    if(!avatarLocalPath){
-        throw new ApiError(400, "Avatar file is required")
-    }
-////upload using "uploadOnCloudinary"
-    const avatar =await uploadOnCloudinary(avatarLocalPath)
-    const coverImage =await uploadOnCloudinary(coverImageLocalPath)
+        let coverImageLocalPath;
+        if(req.files && Array.isArray(req.files.coverImage) && req.files.coverImage.length>0){
+            coverImageLocalPath=req.files.coverImage[0].path;
+        }
 
-    //  re check if avatar is present "MEANS IT IS UPLOADED OR NOT BCZ IN SCHEMA IT IS REQUIRED FIELS SO IF NOT THERE THEN DB BREAK"
-    if(!avatar){
-        throw new ApiError(400, "Avatar file is required") 
-    } 
 
-    // now upload url of cloudnery which we get on uploading  and other details// only User talk to Db
-   const user= await User.create({
-        fullName,
-        avatar : avatar.url,
-        coverImage : coverImage?.url || "",
-        email,
-        password,
-        username : username.toLowerCase()
-    }) 
+        if(!avatarLocalPath){
+            throw new ApiError(400, "Avatar file is required")
+        }
+    ////upload using "uploadOnCloudinary"
+        const avatar =await uploadOnCloudinary(avatarLocalPath)
+        const coverImage =await uploadOnCloudinary(coverImageLocalPath)
 
-    //  now check if user is created or not , mongoDb by default add a field "_id" with every field
-    // use ".select"  if created , to get the specific data of created user., but it takes a string as input and santaxely we put "-"field what we dont want to select.
+        //  re check if avatar is present "MEANS IT IS UPLOADED OR NOT BCZ IN SCHEMA IT IS REQUIRED FIELS SO IF NOT THERE THEN DB BREAK"
+        if(!avatar){
+            throw new ApiError(400, "Avatar file is required") 
+        } 
 
-    const userCreated =await User.findById(user._id).select(
-        "-password -refreshToken"
-    )
+        // now upload url of cloudnery which we get on uploading  and other details// only User talk to Db
+       const user= await User.create({
+            fullName,
+            avatar : avatar.url,
+            coverImage : coverImage?.url || "",
+            email,
+            password,
+            username : username.toLowerCase()
+        }) 
 
-    if(!userCreated){
-        throw new ApiError(500, "Something went wrong while registering the user")
-    }
+        //  now check if user is created or not , mongoDb by default add a field "_id" with every field
+        // use ".select"  if created , to get the specific data of created user., but it takes a string as input and santaxely we put "-"field what we dont want to select.
 
-    return res.status(201).json(
-        new ApiResponse(200, userCreated, "user data registered sucessfully")
-    )
+        const userCreated =await User.findById(user._id).select(
+            "-password -refreshToken"
+        )
+
+        if(!userCreated){
+            throw new ApiError(500, "Something went wrong while registering the user")
+        }
+
+        return res.status(201).json(
+            new ApiResponse(200, userCreated, "user data registered sucessfully")
+        )
 })
 
-export {registerUser};
+
+const loginUser=asyncHandler( async(req, res)=>{
+            // steps....
+            // req body => data
+            // how to login user Username or Email
+            // find the user 
+            //  1. exist if  NOT > not exist singup
+            //password check > false > wrong password 
+            // true > do >> generate ACCESSTOKE AND REFRESH TOKEN .  as user SIGNUP/ REGISTER we create its AC and RT and _id   
+            //  send tokens useing secure  cookie
+            
+
+            //  implementation
+            const {email, username, password}=req.body;
+            //  using what to login
+            if(!username || !email){
+                throw new ApiError(400, "username or password is required")
+            }
+
+            //  find user for both email or username , use User db models 
+            // User.findOne({email}) or User.findOne({email}) 
+            //  best is 
+           const user= await User.findOne({
+                $or : [{username}, {email}]
+            }) 
+            if(!user){
+                throw new ApiError(404, "user does not exist")
+            }
+
+            // user exist check password .. we have a method isPasswordCorrect in user.model
+            // access that usomh user not User bcz User is  onject of Mongoose, where as user is a object of Schema
+            const isPasswordValid=await user.isPasswordCorrect(password)
+            if(!isPasswordValid) {
+                throw new ApiError(401, "Password Incorrect")
+            }
+            // generate AC AND RT using methode 
+            const {accessToken, refreshToken}=await generateAccessTokenAndRefreshToken(user._id)
+            // send using cookies
+            // IMP THE USER HERE IS NOT REFRESHED SO IT DONT HAVE RT AND AC VALUES EVEN THOUGH METHOD ^ HAVE SET IT 
+            // WE HAEV TWO METHODE OEN UPDATE TEH USER OBJECT OR REFRESH OR REFETCH OBJ, DEPENDS ON EXPENSE OF OPERATION
+            // DONT SELECT PASSWORD AND REFRESHTOKEN .....................LOOK SELECT METHODE -NOTTOSELECT
+            const loggedInUser=await User.findById(user._id).select("-password -refreshToken");
+
+            // cookies , when sending cookies => desing a option a object in cookies., secure true means only server can modifie it not user or client
+            const options = {
+                httpOnly :  true,
+                secure : true
+            }
+            return res
+            .status(200)
+            .cookie("accessToken", accessToken, options)
+            .cookie("refreshToken", refreshToken, options)
+            .json(
+                new ApiResponse(
+                     200,
+                     {user: loggedInUser, accessToken, refreshToken},
+                     "user logged in sucessfully "
+                )
+            )
+
+
+            
+
+})
+
+export {registerUser, loginUser};
