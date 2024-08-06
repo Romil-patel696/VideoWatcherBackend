@@ -3,6 +3,7 @@ import {ApiError} from "../utils/ApiError.js"
 import { User } from "../models/user.model.js";
 import {uploadOnCloudinary} from "../utils/cloudnery.js"
 import {ApiResponse} from "../utils/ApiResponse.js"
+import jwt from "jsonwebtoken"
 
 const generateAccessTokenAndRefreshToken=async(userId)=>{
     //  methode, as we have logied in we have access to user id , 
@@ -211,4 +212,52 @@ const logoutUser=asyncHandler(async(req, res)=>{
 
 
 })
-export {registerUser, loginUser, logoutUser};
+
+const refreshAcessToken=asyncHandler(async(req, res)=>{
+    // to get a new AT needed a RT so take from Cookies or body if mobile
+    try {
+        const incommingRefreshToken=req.cookies.refreshToken || req.body.refreshToken
+        if(!incommingRefreshToken){
+            throw new ApiError(401, "unothorized request")
+        }
+    
+            //  we haev a RT in DB and onen sended by user in req.
+            // we need real db RT
+            const decodedToken=jwt.verify(incommingRefreshToken, process.env.REFRESH_TOKEN_SECRET)
+    
+            // see the decoded form in model.js
+            // get teh id
+           const user=await User.findById(decodedToken?._id)
+    
+           if(!user){
+            throw new ApiError(401, "Invalid Refresh Token")
+           }
+    
+        //    match the both RF
+        if(incommingRefreshToken !== user?.refreshToken){
+            throw new ApiError(401, "Refresh token is expired or used")
+        } 
+    
+        //  now generate new AT  bcz checked, and send to user in cookies
+        const options = {
+            httpOnly:  true,
+            secure: true
+        }
+    
+        const {accessToken, newRefreshToken}=await generateAccessTokenAndRefreshToken(user._id)
+        return res.status(200)
+        .cookie("accessToken", accessToken, options)
+        .cookie("refreshToken", newRefreshToken, options)
+        .json(
+            new ApiResponse(200, 
+                {accessToken, refreshToken: newRefreshToken},
+                "accessToken Refreshed"
+            )
+        )
+    } catch (error) {
+        throw new ApiError(401, error?.message || "Invalid refresh Token")
+        
+    }
+
+})
+export {registerUser, loginUser, logoutUser, refreshAcessToken};
