@@ -178,13 +178,11 @@ const loginUser=asyncHandler( async(req, res)=>{
 
 
 const logoutUser=asyncHandler(async(req, res)=>{
-    //  logout how 1. cleare cookies from user , 2. Reset Refreshtoken adn At
-    //  to premove RT AT from model object we need to find it using its id _id, but we dont have access to used data or object ==> 
+    //  logout how 1. cleare cookies from user , 2. Reset Refreshtoken adn AT
+    //  to remove RT AT from model object we need to find it using its id _id, but we dont have access to used data or object ==> 
         // User.findById(....), use middleware ==> when logout , get data in between set id =_id to logout and used that id to remove RT and At
         //  from object . req res aree just obj , 
         // create a middleware which give acess 
-
-
         // DONE WE WILL COME HERE ONLY WHE verifyJWT a authentication methhode extecuted sucessfully, AND ALSO IT ADD A NEW FIELD TO REQ , NOU USE THAT AND GET THE DATA .
          await User.findByIdAndUpdate(req.user._id, 
             {
