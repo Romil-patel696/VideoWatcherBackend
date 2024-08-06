@@ -127,7 +127,10 @@ const loginUser=asyncHandler( async(req, res)=>{
             const {email, username, password}=req.body;
             //  using what to login
             if(!username || !email){
-                throw new ApiError(400, "username or password is required")
+                if(!username && !email){
+
+                    throw new ApiError(400, "username or password is required")
+                }
             }
 
             //  find user for both email or username , use User db models 
