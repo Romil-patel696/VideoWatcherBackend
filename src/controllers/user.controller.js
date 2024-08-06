@@ -4,8 +4,8 @@ import { User } from "../models/user.model.js";
 import {uploadOnCloudinary} from "../utils/cloudnery.js"
 import {ApiResponse} from "../utils/ApiResponse.js"
 
-//  methode, as we have logied in we have access to user id , 
 const generateAccessTokenAndRefreshToken=async(userId)=>{
+    //  methode, as we have logied in we have access to user id , 
     try{
 
         const user=await User.findById(userId)
@@ -55,7 +55,7 @@ const registerUser=asyncHandler(async (req, res)=>{
         // to check if user already exist or not, use USER methode to do so , it can takl to mongo db 
 
         const existedUser= await User.findOne({
-            $or : [{username}, {email}]
+            $or: [{username}, {email}]
         })
         if(existedUser){
             throw new ApiError(409, "User with email and username exists.")
@@ -88,11 +88,11 @@ const registerUser=asyncHandler(async (req, res)=>{
         // now upload url of cloudnery which we get on uploading  and other details// only User talk to Db
        const user= await User.create({
             fullName,
-            avatar : avatar.url,
-            coverImage : coverImage?.url || "",
+            avatar: avatar.url,
+            coverImage: coverImage?.url || "",
             email,
             password,
-            username : username.toLowerCase()
+            username: username.toLowerCase()
         }) 
 
         //  now check if user is created or not , mongoDb by default add a field "_id" with every field
@@ -156,8 +156,8 @@ const loginUser=asyncHandler( async(req, res)=>{
 
             // cookies , when sending cookies => desing a option a object in cookies., secure true means only server can modifie it not user or client
             const options = {
-                httpOnly :  true,
-                secure : true
+                httpOnly:  true,
+                secure: true
             }
             return res
             .status(200)
@@ -170,10 +170,42 @@ const loginUser=asyncHandler( async(req, res)=>{
                      "user logged in sucessfully "
                 )
             )
-
-
-            
-
 })
 
-export {registerUser, loginUser};
+
+const logoutUser=asyncHandler(async(req, res)=>{
+    //  logout how 1. cleare cookies from user , 2. Reset Refreshtoken adn At
+    //  to premove RT AT from model object we need to find it using its id _id, but we dont have access to used data or object ==> 
+        // User.findById(....), use middleware ==> when logout , get data in between set id =_id to logout and used that id to remove RT and At
+        //  from object . req res aree just obj , 
+        // create a middleware which give acess 
+
+
+        // DONE WE WILL COME HERE ONLY WHE verifyJWT a authentication methhode extecuted sucessfully, AND ALSO IT ADD A NEW FIELD TO REQ , NOU USE THAT AND GET THE DATA .
+         await User.findByIdAndUpdate(req.user._id, 
+            {
+                $set: {
+                    refreshToken: undefined
+                }
+            },
+            {
+                new:true
+            }
+        )
+        // refreshToken  removed 
+        // now cookies
+
+        const options = {
+            httpOnly:  true,
+            secure: true
+        }
+        
+        return res.status(200)
+        .clearCookie("accessToken", options)
+        .clearCookie("refreshToken", options)
+        .json(new ApiResponse(200, {}, "User Logged Out "))
+        
+
+
+})
+export {registerUser, loginUser, logoutUser};
