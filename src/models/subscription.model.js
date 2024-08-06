@@ -12,3 +12,5 @@ const subscriptionSchema=new Schema({
     }
 },{timestamps:true})
 export const Subscription=mongoose.model("Subscription", subscriptionSchema);
+
+//  both channel and subscriber are the same user , a user haev a channel and a channel is a user
