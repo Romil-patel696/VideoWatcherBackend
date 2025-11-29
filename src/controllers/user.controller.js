@@ -10,7 +10,7 @@ const generateAccessTokenAndRefreshToken=async(userId)=>{
     try{
 
         const user=await User.findById(userId)
-        const accessToken=user.generateAccessToken()
+        const accessToken=user.generateAccessToken()//method defined in user.model.js
         const refreshToken=user.generateRefreshToken()
         //  generated not saved in DB so add
         user.refreshToken=refreshToken;
@@ -183,6 +183,7 @@ const logoutUser=asyncHandler(async(req, res)=>{
         // User.findById(....), use middleware ==> when logout , get data in between set id =_id to logout and used that id to remove RT and At
         //  from object . req res aree just obj , 
         // create a middleware which give acess 
+        
         // DONE WE WILL COME HERE ONLY WHE verifyJWT a authentication methhode extecuted sucessfully, AND ALSO IT ADD A NEW FIELD TO REQ , NOU USE THAT AND GET THE DATA .
          await User.findByIdAndUpdate(req.user._id, 
             {
@@ -340,6 +341,8 @@ const updaetUserAvatar= asyncHandler( async(req, res)=>{
         new ApiResponse(200, user, "avatar updated sucessfully")
     )
 })
+
+
 const updaetUserCoverImage= asyncHandler( async(req, res)=>{
     // file not files bcz only one file , previsouly we haev used files and fields bcz multiple file 
     // uplodad on local using multer
@@ -371,5 +374,6 @@ const updaetUserCoverImage= asyncHandler( async(req, res)=>{
     )
 
 })
+
 
 export {registerUser, loginUser, logoutUser, refreshAcessToken, changeCurrentPassword, getCurrentUser, updateAccountDetails, updaetUserAvatar, updaetUserCoverImage};

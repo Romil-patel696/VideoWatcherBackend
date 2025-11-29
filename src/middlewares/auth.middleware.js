@@ -3,7 +3,7 @@ import { ApiError } from "../utils/ApiError.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import jwt from "jsonwebtoken"
 export const verifyJWT=asyncHandler(async(req, res, next)=>{
-    // check if user is itrue login the add a object req.user
+    // check if user is true login the add a object req.user
     //  to check useing AT and RT in user cookies.
     try {
         const token=    req.cookies?.accessToken || req.header("Authorization")?.replace("Bearer ", "")
